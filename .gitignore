@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Native build artifacts
+native-plugin/build/arm64-v8a/*.o
+native-plugin/build/x86_64/*.o
+
+# Unity meta files (keep for package consistency)
+# *.meta
