@@ -52,8 +52,24 @@ struct PoseEstimationJob : Unity.Jobs.IJobParallelFor
 
         var pos = pose.t.AsFloat3() * math.float3(1, -1, 1);
 
-        var rot = math.quaternion(pose.R.AsFloat3x3());
-        rot = rot.value * math.float4(-1, 1, -1, 1);
+        var pos = pose.t.AsFloat3() * math.float3(1, -1, 1);
+
+        // Apply XOR transformation to rotation matrix BEFORE converting to quaternion
+        // This correctly transforms from OpenCV (Y-down) to Unity (Y-up) coordinates
+        var R = pose.R.AsFloat3x3();
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                // XOR: negate if exactly one index is 1 (row 1 XOR column 1)
+                if ((i == 1) != (j == 1))
+                {
+                    R[i, j] = -R[i, j];
+                }
+            }
+        }
+
+        var rot = math.quaternion(R);
 
         _output[i] = new TagPose(_input[i].Ref.ID, pos, rot);
     }
