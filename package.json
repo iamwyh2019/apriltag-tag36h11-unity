@@ -6,7 +6,7 @@
   "keywords": [ "unity", "apriltag", "tag36h11", "aruco", "marker tracking" ],
   "license": "BSD-2-Clause",
   "name": "com.iamwyh2019.apriltag.tag36h11",
-  "unity": "6000.0",
+  "unity": "2021.3",
   "unityRelease": "0f1",
-  "version": "1.0.2"
+  "version": "1.0.3"
 }

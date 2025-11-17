@@ -55,14 +55,14 @@ struct PoseEstimationJob : Unity.Jobs.IJobParallelFor
         // Apply XOR transformation to rotation matrix BEFORE converting to quaternion
         // This correctly transforms from OpenCV (Y-down) to Unity (Y-up) coordinates
         var R = pose.R.AsFloat3x3();
-        for (int i = 0; i < 3; i++)
+        for (int row = 0; row < 3; row++)
         {
-            for (int j = 0; j < 3; j++)
+            for (int col = 0; col < 3; col++)
             {
                 // XOR: negate if exactly one index is 1 (row 1 XOR column 1)
-                if ((i == 1) != (j == 1))
+                if ((row == 1) != (col == 1))
                 {
-                    R[i, j] = -R[i, j];
+                    R[row, col] = -R[row, col];
                 }
             }
         }
