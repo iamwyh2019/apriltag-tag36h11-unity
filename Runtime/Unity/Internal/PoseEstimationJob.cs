@@ -25,28 +25,33 @@ struct PoseEstimationJob : Unity.Jobs.IJobParallelFor
     [ReadOnly] NativeArray<Input> _input;
     [WriteOnly] NativeArray<TagPose> _output;
 
-    // Camera parameters
+    // Camera parameters (full pinhole intrinsics, in DETECTOR-image pixel space:
+    // top-left origin, matching the corners produced by the AprilTag detector).
     double _tagSize;
-    double _focalLength;
+    double _focalLengthX;
+    double _focalLengthY;
     double2 _focalCenter;
 
-    // Constructor
+    // Constructor — takes separate fx/fy and the true principal point (cx, cy).
+    // Callers that only know the field of view can derive fx=fy and cx,cy=image center
+    // before constructing this (see TagDetector.ProcessImage(image, fov, tagSize)).
     public PoseEstimationJob
       (NativeArray<Input> input, NativeArray<TagPose> output,
-       int width, int height, float fov, float tagSize)
+       double fx, double fy, double cx, double cy, float tagSize)
     {
         _input = input;
         _output = output;
         _tagSize = tagSize;
-        _focalLength = height / 2 / math.tan(fov / 2);
-        _focalCenter = math.double2(width, height) / 2;
+        _focalLengthX = fx;
+        _focalLengthY = fy;
+        _focalCenter = math.double2(cx, cy);
     }
 
     // Job execution method
     public void Execute(int i)
     {
         var info = new Interop.DetectionInfo(ref _input[i].Ref, _tagSize,
-           _focalLength, _focalLength, _focalCenter.x, _focalCenter.y);
+           _focalLengthX, _focalLengthY, _focalCenter.x, _focalCenter.y);
 
         using var pose = new Interop.Pose(ref info);
 

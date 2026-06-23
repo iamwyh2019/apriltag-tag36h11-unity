@@ -52,11 +52,25 @@ public sealed class TagDetector : System.IDisposable
         _image = null;
     }
 
+    // Legacy convenience overload: assumes a perfect pinhole — square pixels (fx == fy)
+    // derived from the vertical field of view, and a principal point at the image center.
+    // Prefer the full-intrinsics overload below when real fx/fy/cx/cy are available.
     public void ProcessImage
       (ReadOnlySpan<Color32> image, float fov, float tagSize)
     {
         ImageConverter.Convert(image, _image);
-        RunDetectorAndEstimator(fov, tagSize);
+        double fl = _image.Height / 2.0 / System.Math.Tan(fov / 2);
+        RunDetectorAndEstimator(fl, fl, _image.Width / 2.0, _image.Height / 2.0, tagSize);
+    }
+
+    // Full-intrinsics overload. fx/fy/cx/cy must be expressed in the SAME pixel space as the
+    // image passed in (top-left origin, the convention this detector works in). This lets callers
+    // supply the camera's true focal lengths and off-center principal point for accurate pose.
+    public void ProcessImage
+      (ReadOnlySpan<Color32> image, float fx, float fy, float cx, float cy, float tagSize)
+    {
+        ImageConverter.Convert(image, _image);
+        RunDetectorAndEstimator(fx, fy, cx, cy, tagSize);
     }
 
     #endregion
@@ -84,7 +98,7 @@ public sealed class TagDetector : System.IDisposable
     // Unity's job system. It's a bit complicated due to "impedance mismatch"
     // things (unmanaged vs managed vs Unity DOTS).
     //
-    void RunDetectorAndEstimator(float fov, float tagSize)
+    void RunDetectorAndEstimator(double fx, double fy, double cx, double cy, float tagSize)
     {
         _profileData = null;
 
@@ -108,7 +122,7 @@ public sealed class TagDetector : System.IDisposable
 
         // Pose estimation job
         var job = new PoseEstimationJob
-          (jobInput, jobOutput, _image.Width, _image.Height, fov, tagSize);
+          (jobInput, jobOutput, fx, fy, cx, cy, tagSize);
 
         // Run and wait the jobs.
         job.Schedule(tagCount, 1, default(JobHandle)).Complete();
